@@ -29,7 +29,7 @@ Two players battle in a minimalist arena full of obstacles and bullets. It featu
 
 ![Map](ExampleImages/DigitalDuelMap.png)
 
-![Game Over](ExampleImages/DigitalGameOver.png)
+![Game Over](ExampleImages/DigitalDuelGameOver.png)
 
 ---
 
