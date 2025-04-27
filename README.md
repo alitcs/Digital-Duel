@@ -33,7 +33,7 @@ Two players battle in a minimalist arena full of obstacles and bullets. It featu
 
 ---
 
-## 📦 Requirements
+## Requirements
 
 ### Linux / WSL:
 
@@ -56,7 +56,7 @@ Download them from:
 
 ---
 
-## 🔧 Build Instructions
+## Build Instructions
 
 ### Linux / WSL:
 
@@ -70,7 +70,7 @@ Use a compiler like MinGW and link the SDL2 libraries. Make sure the `.dll` file
 
 ---
 
-## ▶️ How to Run
+## How to Run
 
 ### Linux:
 
@@ -84,7 +84,7 @@ Double-click `DigitalDuel.exe` (ensure the SDL2 DLLs are present).
 
 ---
 
-## 🗂️ Folder Structure
+## Folder Structure
 
 ```
 .
@@ -112,7 +112,7 @@ Double-click `DigitalDuel.exe` (ensure the SDL2 DLLs are present).
 
 ---
 
-## 🛠 Known Issues / Ideas
+## Known Issues / Ideas
 
 - No sound/music yet
 - Max 10 bullets per player (static array)
@@ -125,7 +125,7 @@ Double-click `DigitalDuel.exe` (ensure the SDL2 DLLs are present).
 
 ---
 
-## 🌐 License
+## License
 
 This project is **public domain / open-source**.
 
@@ -140,12 +140,12 @@ No attribution required
 
 ---
 
-## 👋 Contributing
+## Contributing
 
 Pull requests and forks are welcome. If you'd like to add a new mechanic, fix bugs, or help polish the codebase, feel free to contribute!
 
 ---
 
-## 🧑‍💻 Author
+## Author
 
 Built by **Ali Hamoudi** — powered by SDL2, C, and way too much debugging.
