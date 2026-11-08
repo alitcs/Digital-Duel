@@ -9,12 +9,10 @@ Two players battle in a minimalist arena full of obstacles and bullets. It featu
 ## Gameplay Overview
 
 - **Player 1** (🔴 Red)
-
   - Move: `W`, `A`, `S`, `D`
   - Shoot: `E`
 
 - **Player 2** (🔵 Blue)
-
   - Move: Arrow keys
   - Shoot: `/`
 
@@ -57,6 +55,53 @@ Download them from:
 ---
 
 ## Build Instructions
+
+### Browser (Emscripten)
+
+The browser version uses the same C game and controls, compiled to WebAssembly.
+On Windows, open your Ubuntu/WSL terminal and install Emscripten:
+
+```bash
+sudo apt update
+sudo apt install emscripten
+```
+
+In that terminal, move to the project folder (adjust the Windows username if
+needed), then build:
+
+```bash
+cd /mnt/c/Users/hamou/digital-duel/Digital-Duel
+bash web/build.sh && python3 -m http.server 8000 --directory build/web
+```
+
+This starts the local server only if the build succeeds. Keep the terminal
+running and open <http://localhost:8000> in your Windows browser. (The browser
+cannot load the game directly from the filesystem.)
+
+```bash
+cd /mnt/c/Users/hamou/digital-duel/Digital-Duel
+python3 -m http.server 8000 --directory build/web
+```
+
+The welcome screen explains the controls. Click the game to focus it: Player 1
+uses `W`, `A`, `S`, `D` and `E`; Player 2 uses the arrow keys and `/`. Touch
+devices automatically show directional and shoot buttons for both players;
+hold a direction to move and aim, and hold shoot to fire. Two players share the
+same screen, and landscape orientation is recommended on smaller devices.
+Keyboard controls remain available on touch-enabled computers. This is local
+multiplayer, not online multiplayer. Python is only used as a simple local HTTP
+server; the game itself is compiled from C to WebAssembly and is not a Python
+website.
+
+### Deploy to Netlify
+
+The root `netlify.toml` configures Netlify to install the pinned Emscripten
+SDK, build the browser game, and publish `build/web`. Push the project to a
+GitHub repository, then in Netlify choose **Add new site → Import an existing
+project**, connect that repository, and deploy. Netlify reads the build command
+and publish directory from `netlify.toml`; you do not need to configure a
+Python runtime or enter a separate build command. Later pushes to the connected
+branch trigger new deployments.
 
 ### Linux / WSL:
 
@@ -137,6 +182,9 @@ You can:
 - Learn from it
 
 No attribution required
+
+The browser welcome screen uses the separately licensed Press Start 2P font.
+Its SIL Open Font License is included in `web/fonts/OFL.txt`.
 
 ---
 

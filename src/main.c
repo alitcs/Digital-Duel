@@ -2,6 +2,10 @@
 #include "../util/global.h"
 #include "../util/util.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
 SDL_Renderer *renderer = NULL;
 SDL_Window *window = NULL;
 SDL_Event event;
@@ -20,6 +24,59 @@ Player player2 = {{1775, 55, 90, 90}, 0.0, 0, 0, {NULL, NULL, NULL, NULL, NULL, 
 Player *players[] = {&player1, &player2};
 
 Uint32 currentTime = 0;
+static Uint32 lastTime;
+static int running = 1;
+
+static void RunFrame(void)
+{
+    currentTime = SDL_GetTicks();
+    float deltaTime = (currentTime - lastTime) / 1000.0f;
+    lastTime = currentTime;
+    while (SDL_PollEvent(&event))
+    {
+        if (event.type == SDL_QUIT)
+        {
+            running = 0;
+            break;
+        }
+        if (currentState == MENU)
+            HandleMenu(&event);
+    }
+
+    if (!running)
+    {
+#ifdef __EMSCRIPTEN__
+        emscripten_cancel_main_loop();
+        CleanUp();
+#endif
+        return;
+    }
+
+    SDL_RenderClear(renderer);
+
+    if (currentState == MENU)
+    {
+        DisplayMenu(renderer);
+    }
+    else if (currentState == GAME)
+    {
+        HandleGame(renderer, &player1, &player2, deltaTime);
+        DisplayGame(renderer, &player1, &player2);
+    }
+    else if (currentState == GAMEOVER)
+    {
+        DisplayGameOver(renderer);
+        float gameoverdeltaTime = (SDL_GetTicks() - gameovercurrentTime) / 1000.0f;
+
+        if (gameoverdeltaTime > 3.0f)
+        {
+            ResetGame(renderer, &player1, &player2);
+            currentState = MENU;
+        }
+    }
+
+    SDL_RenderPresent(renderer);
+}
 
 int main(void)
 {
@@ -51,7 +108,11 @@ int main(void)
         return 1;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    Uint32 rendererFlags = SDL_RENDERER_ACCELERATED;
+#ifndef __EMSCRIPTEN__
+    rendererFlags |= SDL_RENDERER_PRESENTVSYNC;
+#endif
+    renderer = SDL_CreateRenderer(window, -1, rendererFlags);
     if (!renderer)
     {
         printf("Rendering Error\nSDL Error: %s\n", SDL_GetError());
@@ -62,59 +123,21 @@ int main(void)
     skytexture = GetImage("assets/images/sky.png");
     cloudtexture = GetImage("assets/images/clouds.png");
     menutexture = GetImage("assets/images/menu.png");
-    maptexture = GetImage("assets/images/map.png");
-    player1.texture = GetImage("assets/images/redplayer.png");
-    player2.texture = GetImage("assets/images/blueplayer.png");
-    bullettexture = GetImage("assets/images/bullet.png");
+    maptexture = GetImage("assets/images/map.PNG");
+    player1.texture = GetImage("assets/images/redplayer.PNG");
+    player2.texture = GetImage("assets/images/blueplayer.PNG");
+    bullettexture = GetImage("assets/images/bullet.PNG");
     gameovertexture = GetImage("assets/images/gameover.png");
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-    int running = 1;
-
-    Uint32 lastTime = SDL_GetTicks();
-    float gameoverdeltaTime = 0.0;
-
+    lastTime = SDL_GetTicks();
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(RunFrame, 0, 1);
+#else
     while (running)
-    {
-        currentTime = SDL_GetTicks();
-        float deltaTime = (currentTime - lastTime) / 1000.0f;
-        lastTime = currentTime;
-        while (SDL_PollEvent(&event))
-        {
-            if (event.type == SDL_QUIT)
-                running = 0;
-            if (currentState == MENU)
-                HandleMenu(&event);
-        }
-
-        SDL_RenderClear(renderer);
-
-        if (currentState == MENU)
-        {
-            DisplayMenu(renderer);
-        }
-        else if (currentState == GAME)
-        {
-            HandleGame(renderer, &player1, &player2, deltaTime);
-            DisplayGame(renderer, &player1, &player2);
-        }
-        else if (currentState == GAMEOVER)
-        {
-            DisplayGameOver(renderer);
-            gameoverdeltaTime = (SDL_GetTicks() - gameovercurrentTime) / 1000.0f;
-
-            if (gameoverdeltaTime > 3.0)
-            {
-                gameoverdeltaTime = 0.0;
-                ResetGame(renderer, &player1, &player2);
-                currentState = MENU;
-            }
-        }
-
-        SDL_RenderPresent(renderer);
-    }
-
+        RunFrame();
     CleanUp();
+#endif
     return 0;
 }

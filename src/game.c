@@ -2,6 +2,19 @@
 #include "../util/global.h"
 #include "../util/util.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+
+static Uint8 touchInput[2][5];
+
+EMSCRIPTEN_KEEPALIVE
+void SetTouchInput(int player, int action, int pressed)
+{
+    if (player >= 0 && player < 2 && action >= 0 && action < 5)
+        touchInput[player][action] = pressed != 0;
+}
+#endif
+
 #define PLAYER_SPEED 300
 #define SCREEN_HEIGHT 1080
 #define SCREEN_WIDTH 1920
@@ -113,6 +126,7 @@ void UpdateBullets(Player *player, float deltaTime)
                 player->bullets[i] = player->bullets[player->bulletc - 1];
                 player->bullets[player->bulletc - 1] = NULL;
                 player->bulletc--;
+                continue;
             }
             if (CheckPlayerCollision(player->bullets[i], players[player->index]))
             {
@@ -127,20 +141,20 @@ void UpdateBullets(Player *player, float deltaTime)
     }
 }
 
-void HandlePlayerInput(Player *player, SDL_Scancode up, SDL_Scancode down, SDL_Scancode left, SDL_Scancode right, SDL_Scancode shoot, const Uint8 *keyState, float deltaTime)
+void HandlePlayerInput(Player *player, SDL_Scancode up, SDL_Scancode down, SDL_Scancode left, SDL_Scancode right, SDL_Scancode shoot, const Uint8 *keyState, const Uint8 *touchState, float deltaTime)
 {
     int moveX = 0, moveY = 0;
     Bullet bullet;
 
-    if (keyState[up])
+    if (keyState[up] || touchState[0])
         moveY = -PLAYER_SPEED;
-    if (keyState[down])
+    if (keyState[down] || touchState[1])
         moveY = PLAYER_SPEED;
-    if (keyState[left])
+    if (keyState[left] || touchState[2])
         moveX = -PLAYER_SPEED;
-    if (keyState[right])
+    if (keyState[right] || touchState[3])
         moveX = PLAYER_SPEED;
-    if (keyState[shoot] && currentTime - player->lastbuttonpress > COOL_DOWN_TIME)
+    if ((keyState[shoot] || touchState[4]) && currentTime - player->lastbuttonpress > COOL_DOWN_TIME)
     {
         if (player->bulletc >= 10)
             return;
@@ -203,6 +217,12 @@ void ResetGame(SDL_Renderer *renderer, Player *player1, Player *player2)
 
 void ResetPlayer(Player *player, int startX, int startY, int index)
 {
+    for (int i = 0; i < player->bulletc; i++)
+    {
+        free(player->bullets[i]);
+        player->bullets[i] = NULL;
+    }
+
     player->rect.x = startX;
     player->rect.y = startY;
     player->rect.w = 90;
@@ -213,23 +233,22 @@ void ResetPlayer(Player *player, int startX, int startY, int index)
     player->bulletc = 0;
     player->lastbuttonpress = 0;
     player->index = index;
-
-    for (int i = 0; i < player->bulletc; i++)
-    {
-        if (player->bullets[i])
-        {
-            free(player->bullets[i]);
-            player->bullets[i] = NULL;
-        }
-    }
 }
 
 void HandleGame(SDL_Renderer *renderer, Player *player1, Player *player2, float deltaTime)
 {
     const Uint8 *keyState = SDL_GetKeyboardState(NULL);
+#ifdef __EMSCRIPTEN__
+    const Uint8 *touch1 = touchInput[0];
+    const Uint8 *touch2 = touchInput[1];
+#else
+    const Uint8 noTouch[5] = {0};
+    const Uint8 *touch1 = noTouch;
+    const Uint8 *touch2 = noTouch;
+#endif
 
-    HandlePlayerInput(player1, SDL_SCANCODE_W, SDL_SCANCODE_S, SDL_SCANCODE_A, SDL_SCANCODE_D, SDL_SCANCODE_E, keyState, deltaTime);
-    HandlePlayerInput(player2, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, SDL_SCANCODE_SLASH, keyState, deltaTime);
+    HandlePlayerInput(player1, SDL_SCANCODE_W, SDL_SCANCODE_S, SDL_SCANCODE_A, SDL_SCANCODE_D, SDL_SCANCODE_E, keyState, touch1, deltaTime);
+    HandlePlayerInput(player2, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, SDL_SCANCODE_SLASH, keyState, touch2, deltaTime);
 
     UpdateBullets(player1, deltaTime);
     UpdateBullets(player2, deltaTime);

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#35a3d8">
+    <title>Digital Duel</title>
+    <style>
+      @font-face {
+        font-family: "Press Start 2P";
+        src: url("fonts/PressStart2P-Regular.ttf") format("truetype");
+        font-display: swap;
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      html, body { width: 100%; min-height: 100%; margin: 0; }
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #182b28;
+        color: #fff7db;
+        font-family: "Trebuchet MS", sans-serif;
+      }
+      .game-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+      }
+      canvas {
+        display: block;
+        width: min(100vw, 177.78vh);
+        height: auto;
+        aspect-ratio: 16 / 9;
+        outline: none;
+      }
+      canvas:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+      .has-touch canvas {
+        width: min(100vw, calc((100dvh - 155px) * 1.7778));
+      }
+      .welcome {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 18px;
+        overflow: auto;
+        background-color: #9cdbef;
+        background-image: url("assets/images/clouds.png"), url("assets/images/sky.png");
+        background-position: center;
+        background-size: cover;
+        image-rendering: pixelated;
+      }
+      .card {
+        width: min(100%, 860px);
+        max-height: 100%;
+        overflow: auto;
+        padding: clamp(16px, 3vw, 32px);
+        color: #272015;
+        background: #f5e6ae;
+        border: 12px solid #17100c;
+        box-shadow: inset 0 0 0 12px #caa564, 12px 12px 0 #604333, 24px 24px 0 rgba(38, 64, 69, .35);
+        text-align: center;
+        font-family: "Press Start 2P", "Courier New", monospace;
+      }
+      .card h1 {
+        margin: 0 0 24px;
+        padding: 20px 8px;
+        border: 12px solid #17100c;
+        background: repeating-linear-gradient(to bottom, #785039 0 24px, #684027 24px 48px);
+        box-shadow: inset 0 12px 0 #916a4b, inset 0 -12px 0 #50301d, 12px 12px 0 #b59661;
+        color: #fff3d2;
+        font-size: clamp(20px, 4.5vw, 40px);
+        line-height: 1.5;
+        text-shadow: 6px 6px 0 #2d1a10;
+      }
+      .card p { margin: 16px 0; font-size: 14px; line-height: 1.8; }
+      .card .tagline { color: #5c412a; }
+      .players {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin: 24px 0;
+        text-align: left;
+      }
+      .player-info {
+        flex: 1 1 240px;
+        padding: 16px;
+        border: 8px solid #553623;
+        background: #fff8df;
+        box-shadow: inset 0 -8px 0 #e5d7af, 4px 4px 0 #b59661;
+        font-size: 16px;
+        line-height: 2;
+      }
+      .player-info strong { display: block; margin-bottom: 6px; }
+      .red { color: #a52323; }
+      .blue { color: #205989; }
+      .start {
+        margin-top: 8px;
+        padding: 20px 24px;
+        border: 12px solid #17100c;
+        background: #e2c32f;
+        color: #17100c;
+        box-shadow: inset 0 12px 0 #f4dc5a, inset 0 -12px 0 #be9e13, 12px 12px 0 #927b45;
+        font: 20px/1.5 "Press Start 2P", "Courier New", monospace;
+        cursor: pointer;
+      }
+      .start:not(:disabled):hover { background: #f0d447; }
+      .start:focus-visible { outline: 3px solid #205989; outline-offset: 4px; }
+      .start:disabled { opacity: .6; cursor: wait; }
+      .card .status { margin-bottom: 0; color: #5c412a; font-size: 12px; }
+      @media (max-width: 480px) {
+        .card { padding: 16px; }
+        .card h1 { margin-bottom: 16px; font-size: 18px; }
+        .card p, .player-info { font-size: 12px; }
+        .players { gap: 8px; margin: 16px 0; }
+        .player-info { padding: 12px; }
+        .start { font-size: 16px; }
+      }
+      .touch-controls {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        width: min(100%, 900px);
+        padding: 5px max(8px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .touch-player { display: flex; align-items: center; gap: 6px; }
+      .pad {
+        display: grid;
+        grid-template-columns: repeat(3, var(--button-size));
+        grid-template-rows: repeat(3, var(--button-size));
+        gap: 2px;
+      }
+      .touch-controls { --button-size: clamp(32px, 8vh, 42px); }
+      @media (max-width: 360px) {
+        .touch-controls { --button-size: 28px; }
+      }
+      .control {
+        padding: 0;
+        border: 2px solid #b08a4d;
+        border-radius: 8px;
+        background: #f3dfa9;
+        color: #3c2b1d;
+        font: bold 18px "Trebuchet MS", sans-serif;
+        touch-action: none;
+        cursor: pointer;
+      }
+      .control.pressed { background: #f4c94d; transform: translateY(2px); }
+      .up { grid-column: 2; grid-row: 1; }
+      .left { grid-column: 1; grid-row: 2; }
+      .right { grid-column: 3; grid-row: 2; }
+      .down { grid-column: 2; grid-row: 3; }
+      .shoot {
+        width: calc(var(--button-size) * 1.35);
+        height: calc(var(--button-size) * 1.35);
+        color: white;
+        border-radius: 50%;
+        font-size: 12px;
+      }
+      .touch-player.red-player .shoot { background: #ad3636; }
+      .touch-player.blue-player .shoot { background: #326eae; }
+      .touch-player .shoot.pressed { filter: brightness(1.3); }
+    </style>
+  </head>
+  <body>
+    <main class="game-area">
+      <canvas id="canvas" width="1920" height="1080" tabindex="0"
+        aria-label="Digital Duel game. Click to focus and use the keyboard to play."></canvas>
+      <div id="touch-controls" class="touch-controls" hidden aria-label="Touch controls">
+        <div class="touch-player red-player" aria-label="Red player touch controls">
+          <div class="pad">
+            <button class="control up" data-player="0" data-action="0" aria-label="Red move up">&#9650;</button>
+            <button class="control down" data-player="0" data-action="1" aria-label="Red move down">&#9660;</button>
+            <button class="control left" data-player="0" data-action="2" aria-label="Red move left">&#9664;</button>
+            <button class="control right" data-player="0" data-action="3" aria-label="Red move right">&#9654;</button>
+          </div>
+          <button class="control shoot" data-player="0" data-action="4" aria-label="Red shoot">FIRE</button>
+        </div>
+        <div class="touch-player blue-player" aria-label="Blue player touch controls">
+          <button class="control shoot" data-player="1" data-action="4" aria-label="Blue shoot">FIRE</button>
+          <div class="pad">
+            <button class="control up" data-player="1" data-action="0" aria-label="Blue move up">&#9650;</button>
+            <button class="control down" data-player="1" data-action="1" aria-label="Blue move down">&#9660;</button>
+            <button class="control left" data-player="1" data-action="2" aria-label="Blue move left">&#9664;</button>
+            <button class="control right" data-player="1" data-action="3" aria-label="Blue move right">&#9654;</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <section id="welcome" class="welcome" aria-labelledby="welcome-title">
+      <div class="card">
+        <h1 id="welcome-title">DIGITAL DUEL</h1>
+        <p class="tagline">ONE HIT WINS</p>
+        <div class="players">
+          <div class="player-info"><strong class="red">RED</strong>WASD: MOVE<br>E: FIRE</div>
+          <div class="player-info"><strong class="blue">BLUE</strong>ARROWS: MOVE<br>/: FIRE</div>
+        </div>
+        <p>MOVE TO AIM<br>TOUCH: USE ON-SCREEN BUTTONS</p>
+        <p>HAND-DRAWN ART<br>CUSTOM-CODED PHYSICS</p>
+        <button id="start" class="start" disabled>Loading...</button>
+        <p id="status" class="status" role="status">Getting the arena ready...</p>
+      </div>
+    </section>
+    <script>
+      var gameCanvas = document.getElementById("canvas");
+      var controls = document.getElementById("touch-controls");
+      var welcome = document.getElementById("welcome");
+      var start = document.getElementById("start");
+      var statusElement = document.getElementById("status");
+      var touchDevice = navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+      var pointers = new Map();
+      var gameKeys = new Set([
+        "KeyW", "KeyA", "KeyS", "KeyD", "KeyE",
+        "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Slash"
+      ]);
+
+      function updateTouchControls() {
+        controls.querySelectorAll(".control").forEach(function (button) {
+          var pressed = Array.from(pointers.values()).some(function (pointer) {
+            return pointer.button === button;
+          });
+          button.classList.toggle("pressed", pressed);
+          if (Module._SetTouchInput) {
+            Module._SetTouchInput(Number(button.dataset.player), Number(button.dataset.action), pressed ? 1 : 0);
+          }
+        });
+      }
+
+      controls.addEventListener("pointerdown", function (event) {
+        var button = event.target.closest(".control");
+        if (!button) return;
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        pointers.set(event.pointerId, {button: button, player: button.dataset.player});
+        updateTouchControls();
+      });
+      controls.addEventListener("pointermove", function (event) {
+        var pointer = pointers.get(event.pointerId);
+        if (!pointer) return;
+        var target = document.elementFromPoint(event.clientX, event.clientY);
+        var button = target && target.closest(".control");
+        pointer.button = button && button.dataset.player === pointer.player ? button : null;
+        updateTouchControls();
+      });
+      function releasePointer(event) {
+        if (pointers.delete(event.pointerId)) updateTouchControls();
+      }
+      controls.addEventListener("pointerup", releasePointer);
+      controls.addEventListener("pointercancel", releasePointer);
+      controls.addEventListener("lostpointercapture", releasePointer);
+      function releaseAll() {
+        pointers.clear();
+        updateTouchControls();
+      }
+      window.addEventListener("blur", releaseAll);
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) releaseAll();
+      });
+
+      start.addEventListener("click", function () {
+        welcome.hidden = true;
+        if (touchDevice) {
+          document.body.classList.add("has-touch");
+          controls.hidden = false;
+        }
+        gameCanvas.focus();
+      });
+      gameCanvas.addEventListener("pointerdown", function () { gameCanvas.focus(); });
+      ["keydown", "keyup"].forEach(function (type) {
+        window.addEventListener(type, function (event) {
+          if (document.activeElement === gameCanvas && gameKeys.has(event.code)) {
+            event.preventDefault();
+          }
+        });
+      });
+      var Module = {
+        canvas: gameCanvas,
+        onRuntimeInitialized: function () {
+          start.disabled = false;
+          start.textContent = "ENTER THE ARENA";
+          statusElement.textContent = "THEN SELECT PLAY";
+        },
+        onAbort: function (reason) {
+          start.disabled = true;
+          statusElement.textContent = "The game could not load: " + reason;
+        }
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>
